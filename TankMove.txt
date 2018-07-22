@@ -1,0 +1,37 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class TankMove : MonoBehaviour {
+
+    public float speed = 10f;
+    public EasyJoystick joystick;
+
+	void OnEnable() {
+        EasyJoystick.On_JoystickMove += OnTankMove;
+    }
+
+    void OnTankMove(MovingJoystick move) {
+        if (move.joystickName != "Tank_joystick") {
+            return;
+        }
+        Debug.Log("aaaa");
+        //摇杆位置
+        float pos_x = move.joystickAxis.x;
+        float pos_y = move.joystickAxis.y;
+
+        if (pos_x != 0 || pos_y != 0) {
+            transform.LookAt(new Vector3(transform.position.x + pos_x, transform.position.y, transform.position.z + pos_y));
+            transform.Translate(transform.forward * speed * Time.deltaTime, Space.Self);
+        }
+    }
+
+    void Start() {
+        OnEnable();
+        Debug.Log(joystick);
+    }
+
+    void Update() {
+        
+    }
+}
