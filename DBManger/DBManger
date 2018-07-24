@@ -1,0 +1,156 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using MySql.Data;
+using MySql.Data.MySqlClient;
+using System;
+using System.Net.Sockets;
+using System.Net;
+using System.Linq;
+
+public class PlayerInfo {
+
+    public PlayerInfo() { }
+    ~PlayerInfo() { }
+
+    public int id;
+    public string userName;
+    public string account;
+    public string password;
+    public int level;
+    public int score;
+    public bool isSelected;
+}
+
+public class LoginLogInfo {
+    public LoginLogInfo() { }
+    ~LoginLogInfo() { }
+
+    public int logId;
+    public string userName;
+    public string loginIP;
+    public string loginDate;
+}
+
+
+public class DBManger : MonoBehaviour {
+
+    private Connect dbConnect;
+    private string playerName;
+    private string account;
+    private string pwd;
+
+    public static DBManger _instance;
+
+    void Awake() {
+        _instance = this;
+        dbConnect = this.GetComponent<Connect>();
+        
+    }
+
+	// Use this for initialization
+	void Start () {
+		
+	}
+	
+	// Update is called once per frame
+	void Update () {
+		if (Input.GetKeyDown(KeyCode.X)) {
+            //dbConnect.Select("show tables;");
+            dbConnect.Add("insert into player(player,account,pwd) values(\"twd\",123,123);");
+        }
+	}
+    /// <summary>
+    /// 用户注册（添加用户信息）
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="account"></param>
+    /// <param name="pwd"></param>
+    public void OnSignUp(string name,string account, string pwd) {
+        dbConnect.Add("insert into player(username,account,pwd) values(" + "\"" + name + "\"" +  "," + account + "," + pwd + ");");
+    }
+
+    /// <summary>
+    /// 用户登录（添加日志信息）
+    /// </summary>
+    /// <param name="account"></param>
+    /// <param name="pwd"></param>
+    /// <returns></returns>
+    public bool OnSignIn(string account, string pwd) {
+        string ans = dbConnect.Select("select pwd from player where account=" + account + ";");
+        Debug.Log(ans);
+        if (ans != "NULL") {
+            Debug.Log("登录成功");
+            string name = dbConnect.Select("select username from player where account=" + account + ";");
+            string ip = GetIpAddr();
+            string time = DateTime.Now.ToString("u");
+            Debug.Log(time);
+            dbConnect.Add("insert into loginlog(username, loginip, logindate) values(" + "\"" + name + "\"" + "," + "\"" + ip + "\"" + "," + "\"" + time + "\"" + ");");
+            return true;
+        } else {
+            Debug.Log("登录失败");
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// 更新用户管理
+    /// </summary>
+    /// <returns></returns>
+    public List<PlayerInfo> OnUpdatePlayerInfo() {
+        int player_count = int.Parse(dbConnect.Select("select count(*) from player;"));
+        //Debug.Log("player_count" + player_count); 没毛病
+        List<PlayerInfo> player_list = new List<PlayerInfo>(); 
+        for (int i = 0; i < player_count; i++) {
+            PlayerInfo player = new PlayerInfo();
+            player.id =int.Parse(dbConnect.Select("select id from player limit " + i + ",1;"));
+            player.userName = dbConnect.Select("select username from player limit " + i + ",1;");
+            player.account = dbConnect.Select("select account from player limit " + i + ",1;");
+            player.password = dbConnect.Select("select pwd from player limit " + i + ",1;");
+            player.level =int.Parse(dbConnect.Select("select level from player limit " + i + ",1;"));
+            player.score = int.Parse(dbConnect.Select("select score from player limit " + i + ",1;"));
+            player_list.Add(player);
+        }
+        return player_list;
+    }
+
+    /// <summary>
+    /// 更新日志信息
+    /// </summary>
+    /// <returns></returns>
+    public List<LoginLogInfo> OnUpdateLoginLogInfo() {
+        int info_count = int.Parse(dbConnect.Select("select count(*) from loginlog;"));
+        List<LoginLogInfo> info_list = new List<LoginLogInfo>();
+        for (int i = 0; i < info_count; i++) {
+            LoginLogInfo info = new LoginLogInfo();
+            info.logId =int.Parse(dbConnect.Select("select logid from loginlog limit " + i + ",1;"));
+            info.userName = dbConnect.Select("select username from loginlog limit " + i + ",1;");
+            info.loginIP = dbConnect.Select("select loginip from loginlog limit " + i + ",1;");
+            info.loginDate = dbConnect.Select("select logindate from loginlog limit " + i + ",1;");
+            Debug.Log(info.loginDate);
+            info_list.Add(info);  
+        }
+
+        return info_list; 
+    }
+
+    public string GetIpAddr() {
+        IPAddress localIp = null;
+        try {
+            IPAddress[] ipArray;
+            ipArray = Dns.GetHostAddresses(Dns.GetHostName());
+            localIp = ipArray.First(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+
+        } catch (Exception ex) {
+        }
+        if (localIp == null) {
+            localIp = IPAddress.Parse("127.0.0.1");
+        }
+        return localIp.ToString();
+    }
+
+    public void OnDeletePlayer(string username) {
+        dbConnect.Delete("delete from player where username = " + "\"" + username + "\";");
+    }
+
+}
